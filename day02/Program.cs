@@ -6,6 +6,9 @@ var lines = File.ReadAllLines("input.txt")
 var sumOfGameIds = GetSumOfGameIds(lines);
 System.Console.WriteLine($"Sum of valid game ids: {sumOfGameIds}");
 
+var sumOfPowers = GetSumOfGamePowers(lines);
+System.Console.WriteLine($"Sum of powers: {sumOfPowers}");
+
 int GetSumOfGameIds(string[] lines)
 {
     var sumOfGameIds = 0;
@@ -26,6 +29,10 @@ int GetSumOfGameIds(string[] lines)
     return sumOfGameIds;
 }
 
+int GetSumOfGamePowers(string[] lines)
+{
+    return lines.Select(line => new Game(line, 0, 0, 0)).Sum(g => g.Power);
+}
 public class Game
 {
     private readonly int gameId;
@@ -71,6 +78,10 @@ public class Game
     public int Reds => sets.Where(s => s.ContainsKey("red")).Sum(s => s["red"]);
     public int Greens => sets.Where(s => s.ContainsKey("green")).Sum(s => s["green"]);
     public int Blues => sets.Where(s => s.ContainsKey("blue")).Sum(s => s["blue"]);
+    public int MiniumReds => sets.Where(s => s.ContainsKey("red")).Max(s => s["red"]);
+    public int MiniumGreen => sets.Where(s => s.ContainsKey("green")).Max(s => s["green"]);
+    public int MiniumBlue => sets.Where(s => s.ContainsKey("blue")).Max(s => s["blue"]);
+
     public bool IsValidGame
     {
         get
@@ -84,4 +95,6 @@ public class Game
             return true;
         }
     }
+
+    public int Power => MiniumReds * MiniumGreen * MiniumBlue;
 }
