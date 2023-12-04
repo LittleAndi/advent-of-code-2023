@@ -1,26 +1,13 @@
-﻿using System.Data.Common;
-
-var lines = File.ReadAllLines("input.txt")
+﻿var lines = File.ReadAllLines("input.txt")
     .ToArray<string>();
 
+var scratchcards = new Scratchcards(lines);
+
 // Part 1
-System.Console.WriteLine(lines.Select(l => new Card(l)).Sum(card => card.Points));
+System.Console.WriteLine($"Part 1: Total sum of points are {scratchcards.TotalPoints}");
 
 // Part 2
-var cards = lines.Select(l => new Card(l)).Select(c => (c.Id, Card: c, Instances: 1)).ToArray();
-
-for (int i = 0; i < cards.Length; i++)
-{
-    for (int instances = 0; instances < cards[i].Instances; instances++)
-    {
-        for (int j = i + 1; j < cards[i].Card.MatchingNumbers + i + 1; j++)
-        {
-            cards[j].Instances++;
-        }
-    }
-}
-
-System.Console.WriteLine(cards.Sum(c => c.Instances));
+System.Console.WriteLine($"Part 1: Total sum of instances are {scratchcards.TotalInstances}");
 
 public class Card
 {
@@ -51,4 +38,33 @@ public class Card
             return winningNumbers.Intersect(numbersYouHave).Count();
         }
     }
+}
+
+public class Scratchcards
+{
+    private (int Id, Card Card, int Instances)[] cards = [];
+    public Scratchcards(string[] cardInputs)
+    {
+        cards = cardInputs.Select(l => new Card(l)).Select(c => (c.Id, Card: c, Instances: 1)).ToArray();
+
+        UpdateInstances();
+    }
+
+    private void UpdateInstances()
+    {
+        for (int i = 0; i < cards.Length; i++)
+        {
+            for (int instances = 0; instances < cards[i].Instances; instances++)
+            {
+                for (int j = i + 1; j < cards[i].Card.MatchingNumbers + i + 1; j++)
+                {
+                    cards[j].Instances++;
+                }
+            }
+        }
+    }
+
+    public int TotalPoints => cards.Sum(cardInstance => cardInstance.Card.Points);
+
+    public int TotalInstances => cards.Sum(card => card.Instances);
 }
