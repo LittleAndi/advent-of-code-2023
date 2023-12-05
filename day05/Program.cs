@@ -2,8 +2,10 @@
     .ToArray<string>();
 
 var almanac = new Almanac(lines, false);
-//System.Console.WriteLine(almanac.LowestSeedLocation);
 System.Console.WriteLine(almanac.SeedLocations.Min());
+
+var almanac2 = new Almanac(lines, true);
+System.Console.WriteLine(almanac2.LowestSeedLocation);
 
 public class Almanac
 {
@@ -100,7 +102,7 @@ public class Almanac
     {
         get
         {
-            long location = seeds.Min();
+            long location = 0;
             System.Console.WriteLine(location);
 
             while (true)
