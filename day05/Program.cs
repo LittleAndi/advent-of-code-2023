@@ -1,9 +1,8 @@
-﻿using System.Diagnostics.Contracts;
-
-var lines = File.ReadAllLines("input.txt")
+﻿var lines = File.ReadAllLines("input.txt")
     .ToArray<string>();
 
-var almanac = new Almanac(lines);
+var almanac = new Almanac(lines, false);
+//System.Console.WriteLine(almanac.LowestSeedLocation);
 System.Console.WriteLine(almanac.SeedLocations.Min());
 
 public class Almanac
@@ -21,8 +20,9 @@ public class Almanac
 
     private readonly long[] seeds = [];
     private readonly List<KeyValuePair<string, MappingLine>> mapping = [];
+    private readonly bool useRange;
 
-    public Almanac(string[] input)
+    public Almanac(string[] input, bool useRange = false)
     {
         var pos = 0;
 
@@ -54,7 +54,7 @@ public class Almanac
             pos++;
         }
 
-
+        this.useRange = useRange;
     }
 
     // Used for testing the input mapping
@@ -96,17 +96,77 @@ public class Almanac
         }
     }
 
+    public long LowestSeedLocation
+    {
+        get
+        {
+            long location = seeds.Min();
+            System.Console.WriteLine(location);
+
+            while (true)
+            {
+                if (location % 100000 == 0) System.Console.WriteLine(location);
+
+                long currentPosition = location;
+
+                // humidity-to-location map:
+                currentPosition = GetSource("humidity-to-location map:", currentPosition);
+                // temperature-to-humidity map:
+                currentPosition = GetSource("temperature-to-humidity map:", currentPosition);
+                // light-to-temperature map:
+                currentPosition = GetSource("light-to-temperature map:", currentPosition);
+                // water-to-light map:
+                currentPosition = GetSource("water-to-light map:", currentPosition);
+                // fertilizer-to-water map:
+                currentPosition = GetSource("fertilizer-to-water map:", currentPosition);
+                // soil-to-fertilizer map:
+                currentPosition = GetSource("soil-to-fertilizer map:", currentPosition);
+                // seed-to-soil map:
+                currentPosition = GetSource("seed-to-soil map:", currentPosition);
+
+                // check result
+                if (IsASeedLocation(currentPosition)) break;
+
+                location++;
+            }
+            return location;
+        }
+    }
+
+    private bool IsASeedLocation(long currentPosition)
+    {
+        if (!useRange) return seeds.Contains(currentPosition);
+
+        // Think of the seed info as ranges
+        for (int i = 0; i < seeds.Length; i += 2)
+        {
+            if (currentPosition > seeds[i] && currentPosition < seeds[i] + seeds[i + 1]) return true;
+        }
+
+        return false;
+    }
+
     private long GetDestination(string mapName, long source)
     {
         long destination = source;
-        var map = mapping.Where(m => m.Key.Equals(mapName)).FirstOrDefault(m => m.Value.IsMappedWithThisLine(source)).Value;
+        var map = mapping.Where(m => m.Key.Equals(mapName)).FirstOrDefault(m => m.Value.IsSourceMappedWithThisLine(source)).Value;
         if (map != null) destination = map.Destination(source);
         return destination;
+    }
+
+    private long GetSource(string mapName, long destination)
+    {
+        long source = destination;
+        var map = mapping.Where(m => m.Key.Equals(mapName)).FirstOrDefault(m => m.Value.IsDestinationMappedWithThisLine(destination)).Value;
+        if (map != null) source = map.Source(destination);
+        return source;
     }
 }
 
 public record MappingLine(long DestinationCategoryStart, long SourceCategoryStart, long Length)
 {
-    public bool IsMappedWithThisLine(long source) => source >= SourceCategoryStart && source < SourceCategoryStart + Length;
-    public long Destination(long source) => IsMappedWithThisLine(source) ? DestinationCategoryStart + (source - SourceCategoryStart) : -1;
+    public bool IsSourceMappedWithThisLine(long source) => source >= SourceCategoryStart && source < SourceCategoryStart + Length;
+    public bool IsDestinationMappedWithThisLine(long destination) => destination >= DestinationCategoryStart && destination < DestinationCategoryStart + Length;
+    public long Destination(long source) => IsSourceMappedWithThisLine(source) ? DestinationCategoryStart + (source - SourceCategoryStart) : -1;
+    public long Source(long destination) => IsDestinationMappedWithThisLine(destination) ? SourceCategoryStart + (destination - DestinationCategoryStart) : -1;
 };
