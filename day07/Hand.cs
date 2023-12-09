@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text.RegularExpressions;
 
 public enum HandType
@@ -28,14 +29,40 @@ public partial class Hand : IComparable<Hand>
         { '4', 4 },
         { '3', 3 },
         { '2', 2 },
+        { 'j', 1 },
     };
+    private readonly SearchValues<char> jokers = SearchValues.Create(['J', 'j']);
+    public string OriginalCards { get; }
     public string Cards { get; }
     public int Bid { get; }
-    public Hand(string handInput)
+    public Hand(string handInput, bool useJokers = false)
     {
-        Cards = handInput[0..5];
-        Bid = Convert.ToInt32(handInput[6..]);
+        OriginalCards = handInput[0..5];
+        if (useJokers) OriginalCards = OriginalCards.Replace('J', 'j');  // To have another value for this card
+
+        Cards = FindBestHand(handInput[0..5], useJokers);
+
+        // A fix to be able to reuse this class for joker tests
+        if (handInput.Length > 6)
+            Bid = Convert.ToInt32(handInput[6..]);
+        else
+            Bid = 0;
     }
+
+    private string FindBestHand(string handInput, bool useJokers)
+    {
+        if (!useJokers) return handInput;
+
+        var currentBestHand = new Hand(handInput.Replace('J', '2'), false); // Start with the lowest variant
+        foreach (var replacementCard in CardValues.Where(v => !jokers.Contains(v.Key) && v.Value > 2).OrderBy(v => v.Value))
+        {
+            var testHand = new Hand(handInput.Replace('J', replacementCard.Key));
+            if (testHand.CompareTo(currentBestHand) > 0) currentBestHand = testHand;
+        }
+
+        return currentBestHand.Cards;
+    }
+
     public HandType Type
     {
         get
@@ -118,8 +145,8 @@ public partial class Hand : IComparable<Hand>
 
         for (int i = 0; i < 5; i++)
         {
-            if (Cards[i] == other.Cards[i]) continue;
-            return CardValues[Cards[i]].CompareTo(CardValues[other.Cards[i]]);
+            if (OriginalCards[i] == other.OriginalCards[i]) continue;
+            return CardValues[OriginalCards[i]].CompareTo(CardValues[other.OriginalCards[i]]);
         }
 
         // What to return here?
